@@ -51,7 +51,6 @@ names(hum.mRNA)=unlist(lapply(strsplit(names(hum.mRNA), split=" "), function(x) 
 setwd(outdir)
 ##Could loop, for now just running first one
 for (i in 1:length(acc.mRNA)) {
-i=1
     temp.fasta=file.path(outdir, paste0(acc.num.mRNA$clean.name[i], ".fasta"))
     temp.blast=file.path(outdir, paste0(acc.num.mRNA$clean.name[i], ".blast.tsv"))
     temp.html=file.path(outdir, paste0(acc.num.mRNA$clean.name[i], ".blast.html"))
