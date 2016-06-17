@@ -2,8 +2,11 @@
 
 library(annotate)
 library(Biostrings)
+library(msa)
 
 workdir="/mithril/Data/Pacbio/Aligned/160511_blasting"
+outdir="/home/timp/Dropbox/Data/Genetics/Hummingbird/160617_blasting"
+
 
 acc.num.mRNA=read.csv(file.path(workdir, "HbirdmRNAaccnum.csv"), header=TRUE)
 acc.num.AA=read.csv(file.path(workdir, "HbirdAAaccnum.csv"), header=TRUE)
@@ -28,46 +31,55 @@ for (i in 1:dim(acc.num.mRNA)[1]) {
 ##Remove all NAs
 acc.num.mRNA=acc.num.mRNA[!is.na(acc.num.mRNA$seq),]
 
-#write.csv(blast.df,file="~/Dropbox/Hbird_rw/fan/160408_blastdf_test4.csv")
+##Make clean name
+acc.num.mRNA$clean.name=acc.num.mRNA$Enzyme.Name
+acc.num.mRNA$clean.name=gsub("[ :]", ".", acc.num.mRNA$clean.name)
+acc.num.mRNA$clean.name=gsub("[()]", "", acc.num.mRNA$clean.name)
 
-#Step1.5: Convert csv to fasta
+acc.mRNA=DNAStringSet(acc.num.mRNA$seq)
+names(acc.mRNA)=acc.num.mRNA$clean.name
 
-#csv=read.csv("~/Dropbox/Hbird_rw/fan/160408_blastdf_test4.csv",stringsAsFactors=FALSE)
-#seq=csv$sequence
-#names(seq)=csv$accnum
-#dna=DNAStringSet(seq)
-
-#for (i in seq(length(seq))){
-#    writeXStringSet(dna[i],append=TRUE,filepath="~/Dropbox/Hbird_rw/fan/fasta/blastmRNA2.fasta")
-#    }
-
-#Step2: Blast seqs against db, drop all .tsvs in new folder
-
-##ok - simplest answer is to make some temp files and do a system call
-
-##Could loop, for now just running first one
-i=1
-
-temp.fasta=file.path(workdir, "temp.fasta")
-temp.blast=file.path(workdir, "temp.blast.tsv")
-
-##DNA instead of RNA because apparently accession is for cDNA?
-
-writeXStringSet(DNAStringSet(acc.num.mRNA$seq[i]), temp.fasta, append=FALSE, format="fasta")
 
 ##Database location
 hum.db="/mithril/Data/Pacbio/Aligned/151019_proc/blast/humiso_blast"
+    
+##Full mRNA Pacbio stuff
+hum.mRNA=readDNAStringSet(file="/mithril/Data/Pacbio/Aligned/151019_proc/blast/full_final.fa")
+##Trim out extra stuff from names
+names(hum.mRNA)=unlist(lapply(strsplit(names(hum.mRNA), split=" "), function(x) {x[1]}))
 
-system(paste("blastn", "-db", hum.db, "-query", temp.fasta, "-gapopen 1 -gapextend 2 -word_size 9 -reward 1 -evalue 10 -outfmt 7 -out", temp.blast))
+setwd(outdir)
+##Could loop, for now just running first one
+for (i in 1:length(acc.mRNA)) {
+i=1
+    temp.fasta=file.path(outdir, paste0(acc.num.mRNA$clean.name[i], ".fasta"))
+    temp.blast=file.path(outdir, paste0(acc.num.mRNA$clean.name[i], ".blast.tsv"))
+    temp.html=file.path(outdir, paste0(acc.num.mRNA$clean.name[i], ".blast.html"))
+    temp.align.fasta=file.path(outdir, paste0(acc.num.mRNA$clean.name[i], ".align.fasta"))
+    temp.msa.fasta=file.path(outdir, paste0(acc.num.mRNA$clean.name[i], ".msa.fasta"))
+    temp.msa.pdf=file.path(outdir, paste0(acc.num.mRNA$clean.name[i], ".msa.pdf"))
+    
+    ##DNA instead of RNA because apparently accession is for cDNA?
+    
+    writeXStringSet(acc.mRNA[i], temp.fasta, append=FALSE, format="fasta")
+        
+    system(paste("blastn", "-db", hum.db, "-query", temp.fasta, "-gapopen 1 -gapextend 2 -word_size 9 -reward 1 -evalue .01 -outfmt '7 std qseq sseq stitle' -out", temp.blast))
+    
+    system(paste0("~/Code/mview/bin/mview -in blast ", temp.blast, " -html head -coloring identity -moltype dna >", temp.html))
+    system(paste0("~/Code/mview/bin/mview -in blast ", temp.blast, " -out fasta >", temp.align.fasta))
 
-#Step3: Pull out sequence ID from .tsv, then generate sequence (only aligned sequence?) to append on the OG .tsv files
-##column names for blast fmt 7
-blast.cnames=c("query id", "subject id", "per.identity", "alignment.length", "mismatches", "gap.opens", "q.start", "q.end", "s.start", "s.end", "evalue", "bit.score")
 
-blast.res=read.delim(temp.blast, header=F, skip=5, col.names=blast.cnames)
-##Remove the last line that just says processing
-blast.res=blast.res[!is.na(blast.res$evalue),]
+    ##Ok MSA
 
-##Do whatever filtering?
+    fields=c("query.id", "subject.id", "per.identity", "alignment.length", "mismatches" , "gap.opens", "q.start", "q.end", "s.start", "s.end", "evalue", "bit.score", "query.seq", "subject.seq", "subject.title")
 
-##Write out file of hits?  Get out seqs of hits?  plot alignment?  Not sure what next?
+    blast.res=read.delim(temp.blast, skip=5, header=F, col.names=fields)
+    blast.res=blast.res[-nrow(blast.res),]
+    
+    hum.match=hum.mRNA[pmatch(unique(blast.res$subject.id), names(hum.mRNA))]
+    
+    msa.res=msa(c(acc.mRNA[i], hum.match))
+
+    msaPrettyPrint(msa.res, output="pdf", askForOverwrite=FALSE, file=temp.msa.pdf, alFile=temp.msa.fasta, verbose=FALSE, paperWidth=11, paperHeight=8.5)
+    
+}
