@@ -19,9 +19,10 @@ for (i in 1:dim(acc.num.mRNA)[1]) {
     ##If accnum isn't an accession, dies, so error catch here
     ginum=tryCatch(getGI(acc.num.mRNA$Accnum[i]),
                    error = function(e) {print(paste0(acc.num.mRNA$Enzyme.Name[i]," error")); return(NA)})
+    ginum
     if (!is.na(ginum)) {
         acc.num.mRNA$gi.num[i]=ginum
-        acc.num.mRNA$seq=getSEQ(ginum)
+        acc.num.mRNA$seq[i]=getSEQ(ginum)
     } else {
         acc.num.mRNA$gi.num[i]=NA
         acc.num.mRNA$seq[i]=NA
@@ -77,8 +78,8 @@ for (i in 1:length(acc.mRNA)) {
     
     hum.match=hum.mRNA[pmatch(unique(blast.res$subject.id), names(hum.mRNA))]
     
-    msa.res=msa(c(acc.mRNA[i], hum.match))
+    #msa.res=msa(c(acc.mRNA[i], hum.match))
 
-    msaPrettyPrint(msa.res, output="pdf", askForOverwrite=FALSE, file=temp.msa.pdf, alFile=temp.msa.fasta, verbose=FALSE, paperWidth=11, paperHeight=8.5)
+    #msaPrettyPrint(msa.res, output="pdf", askForOverwrite=FALSE, file=temp.msa.pdf, alFile=temp.msa.fasta, verbose=FALSE, paperWidth=11, paperHeight=8.5)
     
 }
