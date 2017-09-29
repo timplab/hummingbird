@@ -1,0 +1,28 @@
+#!/bin/bash
+#$ -S /bin/bash
+#$ -pe mpi 14
+
+##set ref,
+
+workdir=/shared/data/
+
+
+$i=$(expr $SGE_TASK_ID - 1)
+
+fqname1=r1split$(printf "%04d" ${i}).fq.gz
+fqname2=r2split$(printf "%04d" ${i}).fq.gz
+
+
+
+##Align reads (parallelize this, index job I suppose)
+bowtie2 -p 14 -t \
+	-x ${workdir}/${ref} \
+	-1 ${workdir}/${fqname1} \
+	-2 ${workdir}/${fqname2} \
+    | samtools view -bS - | samtools sort - -o ${ref}.aln.bt2.bam
+
+samtools index ${ref}.aln.bt2.bam
+
+
+
+

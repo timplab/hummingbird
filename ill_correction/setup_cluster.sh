@@ -17,7 +17,7 @@ if [ "$1" == "conda" ]; then
     ##Suggest install to /shared/conda
     bash Miniconda3-latest-Linux-x86_64.sh -b -p /shared/conda
     
-    echo 'export PATH=/shared/conda/bin:$PATH' >> ~/.bashrc  
+    #echo 'export PATH=/shared/conda/bin:$PATH' >> ~/.bashrc  
 fi
 
 if [ "$1" == "get.data" ]; then
@@ -43,24 +43,43 @@ fi
 if [ "$1" == "trim.reads" ]; then
 
     echo "Trimming"
-    
-    atropos --aligner insert -a AGATCGGAAGAGC -A AGATCGGAAGAGC \
-	    -o /shared/data/trim1.fq.gz -p /shared/data/trim2.fq.gz \
-	    -pe1 /shared/data/test1.fq.gz -pe2 /shared/data/test2.fq.gz \
-	    -q 25 -i 10 -I 7 --discard-trimmed
-    ##--op-order ACQ
 
-    
-    #trim_galore --gzip -q 25 --paired --clip_R1 10 --clip_R2 7 test1.fq.gz test2.fq.gz
-    #trim_galore --gzip --paired test1.fq.gz test2.fq.gz
+    qsub ~/hummingbird/ill_correction/trim.sh
 	    
 fi
 
+if [ "$1" == "split.reads" ]; then
+    
+    echo "Split"
+    #split to 1M reads
 
-if [ "$1" == "pilon.rounds" ]; then
+    cd /shared/data
+    gunzip -c trim1.fq.gz | split --additional-suffix=.fq -d -l 4000000 - r1split -a 4
+    gunzip -c trim2.fq.gz | split --additional-suffix=.fq -d -l 4000000 - r2split -a 4
+    gzip r1split*fq
+    gzip r2split*fq
 
+fi
+
+
+if [ "$1" == "pilon.first.round" ]; then
+    
     echo "Pilon"
 
+    ##split fqs
+    fqnum=100
 
+    cd /shared/data
+
+    i=1
+    ##Make idx
+    qsub -N idx${i} -v ref=/shared/data/cogent_genefam.fa ~/hummingbird/ill_correction/idx_maker.sh
+
+    ##align
+    qsub -N aln${i} --hold_jid idx${i} -t 1-${fqnum} -v ref=cogent_genefam ~/hummingbird/ill_correction/btalign.sh
+
+    qsub -N pln${i} --hold_jid aln${i} -v ref=cogent_genefam,round=1 ~/hummingbird/ill_correction/pilon.sh
+    
+    
 fi
 
