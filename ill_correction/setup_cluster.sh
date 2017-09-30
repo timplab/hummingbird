@@ -35,6 +35,8 @@ fi
 
 
 if [ "$1" == "installs" ]; then
+    export PATH=/shared/conda/bin:$PATH
+
     conda install -c bioconda bowtie2 pilon samtools atropos trim-galore
     
     pip install --upgrade atropos
@@ -67,18 +69,18 @@ if [ "$1" == "pilon.first.round" ]; then
     echo "Pilon"
 
     ##split fqs
-    fqnum=100
+    fqnum=154
 
     cd /shared/data
 
     i=1
     ##Make idx
-    qsub -N idx${i} -v ref=/shared/data/cogent_genefam.fa ~/hummingbird/ill_correction/idx_maker.sh
+    qsub -N idx${i} -v ref=/shared/data/cogent_genefam ~/hummingbird/ill_correction/idx_maker.sh
 
     ##align
-    qsub -N aln${i} --hold_jid idx${i} -t 1-${fqnum} -v ref=cogent_genefam ~/hummingbird/ill_correction/btalign.sh
+    qsub -N aln${i} -hold_jid idx${i} -t 1-${fqnum} -v ref=cogent_genefam ~/hummingbird/ill_correction/btalign.sh
 
-    qsub -N pln${i} --hold_jid aln${i} -v ref=cogent_genefam,round=1 ~/hummingbird/ill_correction/pilon.sh
+    qsub -N pln${i} -hold_jid aln${i} -v ref=cogent_genefam,round=1 ~/hummingbird/ill_correction/pilon.sh
     
     
 fi
