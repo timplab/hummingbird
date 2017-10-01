@@ -7,14 +7,7 @@
 export PATH=/shared/conda/bin:$PATH
 
 ##Build bowtie2 library
-bowtie2-build --threads 14 $ref.fa $ref
+bowtie2-build --threads 14 $ref.fasta $ref
 
-
-
-##Align reads (parallelize this, index job I suppose)
-
-
-
-##pilon it
 
 

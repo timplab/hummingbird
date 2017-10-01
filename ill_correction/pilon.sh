@@ -11,9 +11,13 @@ workdir=/shared/data/
 cd ${workdir}
 
 samtools merge ${round}.aln.merge.bam ${ref}.*.aln.bt2.bam
-samtools index ${round}.aln.merge.bam
+rm *aln.bt2.bam
 
-pilon --threads 14 -Xmx20G  --genome ${ref}.fa --frags ${round}.aln.merge.bam --changes --output ${round}.pilon
+samtools view -b -f2 ${round}.aln.merge.bam | samtools sort - -o ${round}.filt.bam
+samtools index ${round}.filt.bam
+rm ${round}.aln.merge.bam
+
+pilon --threads 14 -Xmx20G  --genome ${ref}.fa --frags ${round}.filt.bam --changes --output ${round}.pilon
 
 
 

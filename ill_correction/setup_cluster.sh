@@ -33,6 +33,20 @@ if [ "$1" == "get.data" ]; then
     
 fi
 
+if [ "$1" == "restore.run" ]; then
+
+    aws s3 sync  s3://timpawsanalysis/171001_hbird/ /shared/data/
+    
+fi
+
+if [ "$1" == "backup.run" ]; then
+
+    aws s3 sync /shared/data/ s3://timpawsanalysis/171001_hbird/
+
+fi
+
+
+
 
 if [ "$1" == "installs" ]; then
     export PATH=/shared/conda/bin:$PATH
@@ -81,7 +95,32 @@ if [ "$1" == "pilon.first.round" ]; then
     qsub -N aln${i} -hold_jid idx${i} -t 1-${fqnum} -v ref=cogent_genefam ~/hummingbird/ill_correction/btalign.sh
 
     qsub -N pln${i} -hold_jid aln${i} -v ref=cogent_genefam,round=1 ~/hummingbird/ill_correction/pilon.sh
-    
-    
+    ##qsub -N pln${i} -v ref=cogent_genefam,round=1 ~/hummingbird/ill_correction/pilon.sh
+        
+fi
+
+if [ "$1" == "pilon.rounds" ]; then
+    echo "More Pilon"
+
+    ##split fqs
+    fqnum=154
+
+    cd /shared/data
+
+    for i in {2..10}
+    do
+	echo $i
+	prev=$(expr $i - 1)
+	echo ${prev}
+	##Make idx
+	qsub -N idx${i} -hold_jid pln${prev} -v ref=/shared/data/${prev}.pilon ~/hummingbird/ill_correction/idx_maker.sh
+	
+	##align
+	qsub -N aln${i} -hold_jid idx${i} -t 1-${fqnum} -v ref=${prev}.pilon ~/hummingbird/ill_correction/btalign.sh
+	
+	qsub -N pln${i} -hold_jid aln${i} -v ref=${prev}.pilon,round=${i} ~/hummingbird/ill_correction/pilon.sh
+	##qsub -N pln${i} -v ref=cogent_genefam,round=1 ~/hummingbird/ill_correction/pilon.sh
+	
+    done
 fi
 

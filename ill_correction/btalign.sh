@@ -10,7 +10,6 @@ workdir=/shared/data/
 
 cd ${workdir}
 
-
 i=$(expr $SGE_TASK_ID - 1)
 
 echo $i
@@ -26,7 +25,6 @@ bowtie2 -p 14 -t \
 	-2 ${workdir}/${fqname2} \
     | samtools view -bS - | samtools sort - -o ${workdir}/${ref}.${i}.aln.bt2.bam
 
-samtools index ${workdir}/${ref}.${i}.aln.bt2.bam
 
 
 
