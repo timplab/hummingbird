@@ -51,7 +51,7 @@ fi
 if [ "$1" == "installs" ]; then
     export PATH=/shared/conda/bin:$PATH
 
-    conda install -c bioconda bowtie2 pilon samtools atropos trim-galore
+    conda install -y -c bioconda bowtie2 pilon samtools atropos trim-galore
     
     pip install --upgrade atropos
 fi
@@ -101,13 +101,14 @@ fi
 
 if [ "$1" == "pilon.rounds" ]; then
     echo "More Pilon"
+    echo "Round $2"
 
     ##split fqs
     fqnum=154
 
     cd /shared/data
 
-    for i in {2..10}
+    for (( i = $2; i <= $3; i++ ))
     do
 	echo $i
 	prev=$(expr $i - 1)
@@ -119,7 +120,7 @@ if [ "$1" == "pilon.rounds" ]; then
 	qsub -N aln${i} -hold_jid idx${i} -t 1-${fqnum} -v ref=${prev}.pilon ~/hummingbird/ill_correction/btalign.sh
 	
 	qsub -N pln${i} -hold_jid aln${i} -v ref=${prev}.pilon,round=${i} ~/hummingbird/ill_correction/pilon.sh
-	##qsub -N pln${i} -v ref=cogent_genefam,round=1 ~/hummingbird/ill_correction/pilon.sh
+
 	
     done
 fi
