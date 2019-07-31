@@ -1,0 +1,17 @@
+#!/bin/bash
+input_path='/home/ubuntu/data'
+save_path='/home/ubuntu/multi_fast5'
+
+if [ "$1" == "multi" ]; then
+  dir=$(ls $input_path)
+  for i in $dir
+  do
+    echo $i
+    single_to_multi_fast5 --input_path ${input_path}/${i} --save_path ${save_path}/${i} --filename_base ${i} --batch_size 4000 --threads 72 --recursive
+  done 
+fi
+
+if [ "$1" == "redo" ]; then
+	single_to_multi_fast5 --input_path ${input_path}/180418_mg98_efg.213 --save_path ${save_path}/180418_mg98_efg.213 --filename_base 180418_mg98_efg.213 --batch_size 4000 --threads 72 --recursive
+fi
+
